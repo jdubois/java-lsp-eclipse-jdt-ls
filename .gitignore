@@ -13,5 +13,8 @@ Thumbs.db
 # Node (if testing locally)
 node_modules/
 
+# Java compiled classes (from testing examples)
+*.class
+
 # JDTLS downloaded artifacts (should not be committed)
 jdtls-download/
