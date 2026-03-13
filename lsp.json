@@ -1,5 +1,5 @@
 {
-  "eclipse-jdtls": {
+  "java-lsp-eclipse-jdt-ls": {
     "command": "./bin/launch-jdtls",
     "args": [],
     "fileExtensions": {
