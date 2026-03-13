@@ -1,0 +1,17 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# Node (if testing locally)
+node_modules/
+
+# JDTLS downloaded artifacts (should not be committed)
+jdtls-download/

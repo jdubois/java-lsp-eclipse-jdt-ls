@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# Eclipse JDTLS launcher for macOS and Linux
+# This script finds Eclipse JDT Language Server, downloading it automatically
+# if not found, then launches it with the correct platform-specific configuration.
+# It communicates via stdio for LSP.
+#
+# Prerequisites:
+#   - Java 21+ (set JAVA_HOME or have 'java' on PATH)
+#   - curl and tar (for auto-download)
+#
+# Environment variables:
+#   JDTLS_HOME       - Path to the JDTLS installation directory
+#   JAVA_HOME        - Path to the JDK installation
+#   JDTLS_DATA_DIR   - Workspace data directory (default: ~/.cache/jdtls-workspace)
+
+set -euo pipefail
+
+JDTLS_INSTALL_DIR="$HOME/.local/share/jdtls"
+JDTLS_MILESTONES_URL="https://download.eclipse.org/jdtls/milestones"
+
+# --- Resolve Java executable ---
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  JAVA="$JAVA_HOME/bin/java"
+else
+  JAVA="$(command -v java 2>/dev/null || true)"
+fi
+
+if [ -z "$JAVA" ] || [ ! -x "$JAVA" ]; then
+  echo "Error: Java not found. Set JAVA_HOME or add java to your PATH." >&2
+  echo "Eclipse JDTLS requires Java 21 or later." >&2
+  exit 1
+fi
+
+# --- Verify Java version >= 21 ---
+JAVA_VERSION=$("$JAVA" -version 2>&1 | head -1 | sed -E 's/.*"([0-9]+).*/\1/')
+if [ "$JAVA_VERSION" -lt 21 ] 2>/dev/null; then
+  echo "Error: Java 21+ is required, but found Java $JAVA_VERSION." >&2
+  exit 1
+fi
+
+# --- Resolve JDTLS installation ---
+find_jdtls() {
+  if [ -n "${JDTLS_HOME:-}" ] && [ -d "$JDTLS_HOME/plugins" ]; then
+    return 0
+  fi
+
+  local CANDIDATES=(
+    "$JDTLS_INSTALL_DIR"                     # Auto-downloaded location
+    "/opt/homebrew/opt/jdtls/libexec"        # Homebrew on Apple Silicon
+    "/usr/local/opt/jdtls/libexec"           # Homebrew on Intel Mac
+    "/usr/share/java/jdtls"                  # Linux package manager
+    "/opt/jdtls"                             # Manual install
+    "$HOME/jdtls"                            # Simple user install
+  )
+  for candidate in "${CANDIDATES[@]}"; do
+    if [ -d "$candidate/plugins" ]; then
+      JDTLS_HOME="$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# --- Download JDTLS if not found ---
+download_jdtls() {
+  echo "Eclipse JDTLS not found. Downloading latest version..." >&2
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "Error: curl is required for auto-download. Install curl or set JDTLS_HOME manually." >&2
+    return 1
+  fi
+
+  # Find the latest version by scraping the milestones directory listing
+  local LATEST_VERSION
+  LATEST_VERSION=$(curl -fsSL "$JDTLS_MILESTONES_URL/" 2>/dev/null \
+    | grep -oE '1\.[0-9]+\.[0-9]+' \
+    | sort -t. -k1,1n -k2,2n -k3,3n \
+    | tail -1)
+
+  if [ -z "$LATEST_VERSION" ]; then
+    echo "Error: Could not determine the latest JDTLS version." >&2
+    return 1
+  fi
+  echo "Latest version: $LATEST_VERSION" >&2
+
+  # Get the exact filename from latest.txt
+  local FILENAME
+  FILENAME=$(curl -fsSL "$JDTLS_MILESTONES_URL/$LATEST_VERSION/latest.txt" 2>/dev/null | tr -d '[:space:]')
+  if [ -z "$FILENAME" ]; then
+    echo "Error: Could not determine the download filename for JDTLS $LATEST_VERSION." >&2
+    return 1
+  fi
+
+  local DOWNLOAD_URL="$JDTLS_MILESTONES_URL/$LATEST_VERSION/$FILENAME"
+  echo "Downloading from: $DOWNLOAD_URL" >&2
+
+  # Download and extract
+  mkdir -p "$JDTLS_INSTALL_DIR"
+  if curl -fSL --progress-bar "$DOWNLOAD_URL" 2>&2 | tar xz -C "$JDTLS_INSTALL_DIR"; then
+    echo "Eclipse JDTLS $LATEST_VERSION installed to $JDTLS_INSTALL_DIR" >&2
+    JDTLS_HOME="$JDTLS_INSTALL_DIR"
+    return 0
+  else
+    echo "Error: Download failed." >&2
+    rm -rf "$JDTLS_INSTALL_DIR"
+    return 1
+  fi
+}
+
+if ! find_jdtls; then
+  if ! download_jdtls; then
+    echo "" >&2
+    echo "Automatic download failed. Please install Eclipse JDTLS manually:" >&2
+    echo "  macOS:  brew install jdtls" >&2
+    echo "  Linux:  Download from https://download.eclipse.org/jdtls/milestones/" >&2
+    echo "          Extract and set: export JDTLS_HOME=/path/to/jdtls" >&2
+    exit 1
+  fi
+fi
+
+# --- Find the Equinox launcher JAR ---
+LAUNCHER_JAR=$(find "$JDTLS_HOME/plugins" -name 'org.eclipse.equinox.launcher_*.jar' -print -quit 2>/dev/null)
+if [ -z "$LAUNCHER_JAR" ]; then
+  echo "Error: Could not find the Equinox launcher JAR in $JDTLS_HOME/plugins/" >&2
+  exit 1
+fi
+
+# --- Detect platform and select configuration directory ---
+OS_TYPE="$(uname -s)"
+case "$OS_TYPE" in
+  Linux*)  CONFIG_DIR="$JDTLS_HOME/config_linux" ;;
+  Darwin*) CONFIG_DIR="$JDTLS_HOME/config_mac" ;;
+  *)
+    echo "Error: Unsupported platform: $OS_TYPE" >&2
+    exit 1
+    ;;
+esac
+
+if [ ! -d "$CONFIG_DIR" ]; then
+  echo "Error: Configuration directory not found: $CONFIG_DIR" >&2
+  exit 1
+fi
+
+# --- Workspace data directory ---
+DATA_DIR="${JDTLS_DATA_DIR:-$HOME/.cache/jdtls-workspace}"
+mkdir -p "$DATA_DIR"
+
+# --- Launch Eclipse JDTLS ---
+exec "$JAVA" \
+  -Declipse.application=org.eclipse.jdt.ls.core.id1 \
+  -Dosgi.bundles.defaultStartLevel=4 \
+  -Declipse.product=org.eclipse.jdt.ls.core.product \
+  -Dlog.level=ALL \
+  -Xmx1G \
+  --add-modules=ALL-SYSTEM \
+  --add-opens java.base/java.util=ALL-UNNAMED \
+  --add-opens java.base/java.lang=ALL-UNNAMED \
+  -jar "$LAUNCHER_JAR" \
+  -configuration "$CONFIG_DIR" \
+  -data "$DATA_DIR"

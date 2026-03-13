@@ -1,0 +1,9 @@
+{
+  "eclipse-jdtls": {
+    "command": "./bin/launch-jdtls",
+    "args": [],
+    "fileExtensions": {
+      ".java": "java"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "java-lsp-eclipse-jdt-ls",
+  "description": "Java LSP (Eclipse JDT LS) — Provides code intelligence (go-to-definition, hover, completions, diagnostics) for .java files via the Eclipse JDT Language Server.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Julien Dubois",
+    "url": "https://github.com/jdubois"
+  },
+  "license": "MIT",
+  "keywords": ["java", "jdtls", "eclipse", "language-server", "lsp"],
+  "category": "language-support",
+  "skills": "skills/",
+  "lspServers": "lsp.json"
+}
