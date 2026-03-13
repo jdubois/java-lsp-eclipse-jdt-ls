@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Verify that the environment is ready for the Java LSP plugin.
+# Run this after installing the plugin to pre-check prerequisites
+# and pre-download Eclipse JDTLS before first use.
+#
+# Usage: ./bin/verify-setup
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+PASS="✓"
+FAIL="✗"
+ERRORS=0
+
+echo "Verifying Java LSP (Eclipse JDT LS) setup..."
+echo ""
+
+# --- Check Java ---
+if ! resolve_java; then
+  if [ -n "${JAVA_VERSION:-}" ]; then
+    echo "$FAIL Java 21+ is required, but found Java $JAVA_VERSION."
+  else
+    echo "$FAIL Java not found. Install Java 21+ and set JAVA_HOME or add java to PATH."
+    echo "  Download from: https://adoptium.net/"
+  fi
+  ERRORS=$((ERRORS + 1))
+else
+  echo "$PASS Java $JAVA_VERSION found ($JAVA)"
+fi
+
+# --- Check JDTLS ---
+if find_jdtls; then
+  echo "$PASS Eclipse JDTLS found ($JDTLS_HOME)"
+else
+  echo "  Eclipse JDTLS not found. Attempting auto-download..."
+  if download_jdtls; then
+    echo "$PASS Eclipse JDTLS installed to $JDTLS_HOME"
+  else
+    echo "$FAIL Eclipse JDTLS download failed. Install manually:"
+    echo "    macOS:  brew install jdtls"
+    echo "    Linux:  Download from https://download.eclipse.org/jdtls/milestones/"
+    echo "            Extract and set: export JDTLS_HOME=/path/to/jdtls"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# --- Verify Equinox launcher JAR ---
+if [ -n "${JDTLS_HOME:-}" ]; then
+  if find_launcher_jar; then
+    echo "$PASS Equinox launcher JAR found"
+  else
+    echo "$FAIL Equinox launcher JAR not found in $JDTLS_HOME/plugins/"
+    ERRORS=$((ERRORS + 1))
+  fi
+
+  # --- Verify platform config directory ---
+  if detect_config_dir; then
+    echo "$PASS Platform config directory found ($CONFIG_DIR)"
+  else
+    echo "$FAIL Platform config directory not found"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# --- Summary ---
+echo ""
+if [ "$ERRORS" -eq 0 ]; then
+  echo "All checks passed. The Java LSP plugin is ready to use."
+else
+  echo "$ERRORS check(s) failed. Fix the issues above and re-run this script."
+  exit 1
+fi
