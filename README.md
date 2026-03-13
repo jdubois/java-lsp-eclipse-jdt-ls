@@ -23,7 +23,7 @@ copilot plugin install ./java-lsp-eclipse-jdt-ls
 Or from a GitHub repository:
 
 ```bash
-copilot plugin install OWNER/REPO
+copilot plugin install jdubois/java-lsp-eclipse-jdt-ls
 ```
 
 ## Installing Eclipse JDT LS
