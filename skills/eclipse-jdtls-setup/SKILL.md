@@ -72,7 +72,7 @@ This plugin automatically configures JDTLS via the bundled `bin/launch-jdtls` ba
       "command": "powershell",
       "args": ["-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\YOU\\.copilot\\state\\installed-plugins\\java-lsp-eclipse-jdt-ls\\bin\\launch-jdtls.ps1"],
       "fileExtensions": {
-        ".java": "java"
+        ".java": "java-lsp-eclipse-jdt-ls"
       }
     }
   }

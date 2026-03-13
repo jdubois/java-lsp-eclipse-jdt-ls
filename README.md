@@ -69,7 +69,7 @@ The plugin ships with this default LSP configuration (`lsp.json`):
     "command": "./bin/launch-jdtls",
     "args": [],
     "fileExtensions": {
-      ".java": "java"
+      ".java": "java-lsp-eclipse-jdt-ls"
     }
   }
 }
@@ -95,7 +95,7 @@ On Windows, override the LSP config in `~/.copilot/lsp-config.json` to use the P
       "command": "powershell",
       "args": ["-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\YOU\\.copilot\\state\\installed-plugins\\java-lsp-eclipse-jdt-ls\\bin\\launch-jdtls.ps1"],
       "fileExtensions": {
-        ".java": "java"
+        ".java": "java-lsp-eclipse-jdt-ls"
       }
     }
   }
