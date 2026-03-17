@@ -95,8 +95,8 @@ This plugin automatically configures JDTLS via the bundled `bin/launch-jdtls` ba
 
 ### No completions or diagnostics
 1. Ensure the project root contains `pom.xml` or `build.gradle`
-2. For Maven projects, run `mvn dependency:resolve` to populate the local cache
-3. For Gradle projects, run `gradle build` once to populate the local cache
+2. For Maven projects, run `./mvnw dependency:resolve` (or `mvn dependency:resolve` if no wrapper) to populate the local cache
+3. For Gradle projects, run `./gradlew build` (or `gradle build` if no wrapper) once to populate the local cache
 4. Check JDTLS logs for errors
 
 ### Memory issues
