@@ -1,6 +1,8 @@
 {
   "eclipse-jdtls": {
     "command": "./bin/launch-jdtls",
+    "bash": "./bin/launch-jdtls",
+    "powershell": "./bin/launch-jdtls.ps1",
     "args": [],
     "fileExtensions": {
       ".java": "java"
