@@ -1,8 +1,11 @@
 {
   "lspServers": {
     "eclipse-jdtls": {
-      "command": "./bin/launch-jdtls",
-      "args": [],
+      "command": "sh",
+      "args": [
+        "-c",
+        "base=${COPILOT_HOME:-$HOME/.copilot}; for d in \"$base/installed-plugins/_direct/\"*java-lsp-eclipse-jdt-ls \"$base/plugins/\"*java-lsp-eclipse-jdt-ls; do [ -x \"$d/bin/launch-jdtls\" ] && exec \"$d/bin/launch-jdtls\"; done; echo 'Error: launch-jdtls not found in plugin install directories.' >&2; exit 1"
+      ],
       "fileExtensions": {
         ".java": "java"
       }
